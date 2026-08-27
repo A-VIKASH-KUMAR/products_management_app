@@ -12,6 +12,9 @@ export const Header = () => {
             <li className="px-4">
                 <Link to= "/">Product List</Link>
             </li>
+            <li className="px-4">
+                <Link to= "/add-product">Add Product</Link>
+            </li>
         </ul>
       </div>
     </div>
