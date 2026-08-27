@@ -1,0 +1,1 @@
+export const LOGO_URL = "https://devicons.io/devicons/icons/productboard-icon.svg"
