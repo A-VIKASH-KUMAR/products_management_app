@@ -8,8 +8,8 @@ export const Header = () => {
         <img src={LOGO_URL} alt="logo" />
       </div>
       <div className="flex items-center">
-        <ul>
-            <li className="px-4">
+        <ul className="flex p-4 m-4">
+            <li className="px-4 ">
                 <Link to= "/">Product List</Link>
             </li>
             <li className="px-4">

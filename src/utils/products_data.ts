@@ -2,13 +2,13 @@ export interface Product {
   id: string;
   name: string;
   category: string;
-  price: number;
-  stock: number;
+  price: number | string;
+  stock: number | string;
   status: string;
   lastUpdated: string;
 }
 
-export const mockProducts: Product[] | [] = [
+export const mockProducts: Product[] = [
   {
     id: 'P001',
     name: 'Wireless Noise-Canceling Headphones',
