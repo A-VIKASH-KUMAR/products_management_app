@@ -9,8 +9,10 @@ export const ProductsList = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
   const [searchText, setSearchText] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("");
   const [filteredProducts, setFilteredProducts] = useState(Array<Product>);
-
+  
   useEffect(() => {
     const getProductsData = () => {
       const data = fetchProductsData();
@@ -21,13 +23,12 @@ export const ProductsList = () => {
   }, []);
 
   const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchText(value);
-    if (value === "") {
-      setFilteredProducts(productList);
-    }
+    setSearchText(e.target.value);
   };
   const CELL_CLASSES = "py-3 px-4 border-b text-left";
+  const categories = Array.from(new Set(productList.map((p) => p.category)));
+  const statuses = Array.from(new Set(productList.map((p) => p.status)));
+
   const STATUS_COLORS: Record<string, string> = {
     "In Stock": "bg-green-100 text-green-800",
     "Low Stock": "bg-yellow-100 text-yellow-800",
@@ -94,24 +95,28 @@ export const ProductsList = () => {
     setEditingProduct(null);
   };
 
-  function handleSearch(
-    event: React.MouseEvent<HTMLButtonElement>,
-  ): void {
-    event.preventDefault();
-
-    const query = searchText.trim().toLowerCase();
-    if (!query) {
-      setFilteredProducts(productList);
-      return;
-    }
-
-    setFilteredProducts(
-      productList.filter((product) =>
+  const applyFilters = () => {
+    let filtered = productList;
+    if (searchText) {
+      const query = searchText.trim().toLowerCase();
+      filtered = filtered.filter((product) =>
         [product.name, product.category, product.status]
           .some((value) => value.toLowerCase().includes(query)),
-      ),
-    );
-  }
+      );
+    }
+    if (selectedCategory) {
+      filtered = filtered.filter((p) => p.category === selectedCategory);
+    }
+    if (selectedStatus) {
+      filtered = filtered.filter((p) => p.status === selectedStatus);
+    }
+    setFilteredProducts(filtered);
+  };
+
+  useEffect(() => {
+    applyFilters();
+  }, [searchText, selectedCategory, selectedStatus, productList]);
+
 
   return (
     <div className="p-6">
@@ -125,11 +130,35 @@ export const ProductsList = () => {
           onChange={handleSearchInputChange}
         />
         <button
-          onClick={handleSearch}
+          onClick={applyFilters}
           className="px-4 py-2 bg-blue-500 text-white rounded"
         >
           Search
         </button>
+        <select
+          value={selectedCategory}
+          onChange={(e) => setSelectedCategory(e.target.value)}
+          className="m-1 border-2"
+        >
+          <option value="">All Categories</option>
+          {categories.map((cat) => (
+            <option key={cat} value={cat}>
+              {cat}
+            </option>
+          ))}
+        </select>
+        <select
+          value={selectedStatus}
+          onChange={(e) => setSelectedStatus(e.target.value)}
+          className="m-1 border-2"
+        >
+          <option value="">All Statuses</option>
+          {statuses.map((status) => (
+            <option key={status} value={status}>
+              {status}
+            </option>
+          ))}
+        </select>
       </div>
       <div className="products-table">
         <table className="min-w-full bg-white border border-gray-200">
