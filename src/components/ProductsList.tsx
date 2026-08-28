@@ -11,12 +11,14 @@ export const ProductsList = () => {
   const [searchText, setSearchText] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(12);
   const [sortConfig, setSortConfig] = useState<{
     key: string;
     direction: "asc" | "desc";
   } | null>(null);
   const [filteredProducts, setFilteredProducts] = useState(Array<Product>);
-  
+
   useEffect(() => {
     const getProductsData = () => {
       const data = fetchProductsData();
@@ -26,8 +28,17 @@ export const ProductsList = () => {
     getProductsData();
   }, []);
 
+  const indexOfLastProduct = currentPage * itemsPerPage;
+  const indexOfFirstProduct = indexOfLastProduct - itemsPerPage;
+  const currentProducts = filteredProducts.slice(
+    indexOfFirstProduct,
+    indexOfLastProduct,
+  );
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+
   const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchText(e.target.value);
+    setCurrentPage(1);
   };
   const CELL_CLASSES = "py-3 px-4 border-b text-left";
   const categories = Array.from(new Set(productList.map((p) => p.category)));
@@ -123,8 +134,9 @@ export const ProductsList = () => {
     if (searchText) {
       const query = searchText.trim().toLowerCase();
       filtered = filtered.filter((product) =>
-        [product.name, product.category, product.status]
-          .some((value) => value.toLowerCase().includes(query)),
+        [product.name, product.category, product.status].some((value) =>
+          value.toLowerCase().includes(query),
+        ),
       );
     }
     if (selectedCategory) {
@@ -151,7 +163,6 @@ export const ProductsList = () => {
   useEffect(() => {
     applyFilters();
   }, [searchText, selectedCategory, selectedStatus, productList, sortConfig]);
-
 
   return (
     <div className="p-6">
@@ -212,7 +223,7 @@ export const ProductsList = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredProducts.map((product) => (
+            {currentProducts.map((product) => (
               <tr
                 key={product.id}
                 className="hover:bg-gray-50 cursor-pointer"
@@ -227,6 +238,25 @@ export const ProductsList = () => {
             ))}
           </tbody>
         </table>
+      </div>
+      <div className="flex justify-center mt-4">
+        <button
+          className="mx-1 px-3 py-1 bg-gray-200 rounded"
+          disabled={currentPage === 1}
+          onClick={() => setCurrentPage(currentPage - 1)}
+        >
+          Previous
+        </button>
+        <span className="mx-2 self-center">
+          Page {currentPage} of {totalPages || 1}
+        </span>
+        <button
+          className="mx-1 px-3 py-1 bg-gray-200 rounded"
+          disabled={currentPage === totalPages || totalPages === 0}
+          onClick={() => setCurrentPage(currentPage + 1)}
+        >
+          Next
+        </button>
       </div>
       {editingProduct && (
         <EditProductModal
