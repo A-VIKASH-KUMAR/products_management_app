@@ -11,6 +11,10 @@ export const ProductsList = () => {
   const [searchText, setSearchText] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
+  const [sortConfig, setSortConfig] = useState<{
+    key: string;
+    direction: "asc" | "desc";
+  } | null>(null);
   const [filteredProducts, setFilteredProducts] = useState(Array<Product>);
   
   useEffect(() => {
@@ -88,6 +92,25 @@ export const ProductsList = () => {
     setProductList(productList.filter((p) => p.id !== id));
   };
 
+  const requestSort = (key: string) => {
+    let direction: "asc" | "desc" = "asc";
+    if (
+      sortConfig &&
+      sortConfig.key === key &&
+      sortConfig.direction === "asc"
+    ) {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (key: string) => {
+    if (!sortConfig || sortConfig.key !== key) {
+      return " ↕";
+    }
+    return sortConfig.direction === "asc" ? " ↑" : " ↓";
+  };
+
   const handleSave = (updatedProduct: Product) => {
     setProductList(
       productList.map((p) => (p.id === updatedProduct.id ? updatedProduct : p)),
@@ -110,12 +133,24 @@ export const ProductsList = () => {
     if (selectedStatus) {
       filtered = filtered.filter((p) => p.status === selectedStatus);
     }
+
+    if (sortConfig) {
+      filtered.sort((a, b) => {
+        const aValue = a[sortConfig.key as keyof Product];
+        const bValue = b[sortConfig.key as keyof Product];
+
+        if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
+
     setFilteredProducts(filtered);
   };
 
   useEffect(() => {
     applyFilters();
-  }, [searchText, selectedCategory, selectedStatus, productList]);
+  }, [searchText, selectedCategory, selectedStatus, productList, sortConfig]);
 
 
   return (
@@ -165,8 +200,13 @@ export const ProductsList = () => {
           <thead className="bg-gray-100">
             <tr>
               {columns.map((col) => (
-                <th key={col.key} className={CELL_CLASSES}>
+                <th
+                  key={col.key}
+                  className={`${CELL_CLASSES} cursor-pointer hover:bg-gray-200`}
+                  onClick={() => requestSort(col.key)}
+                >
                   {col.label}
+                  {getSortIcon(col.key)}
                 </th>
               ))}
             </tr>
