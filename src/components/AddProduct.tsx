@@ -82,16 +82,42 @@ export const AddProduct: React.FC<{
         <input
           name="price"
           type="number"
+          min="0.1"
+          step="0.01"
           placeholder="Price"
           onChange={handleChange}
+          onInvalid={(e) => {
+            const target = e.target as HTMLInputElement;
+            if (target.validity.rangeUnderflow) {
+              target.setCustomValidity("Price must be at least 0.1");
+            } else if (target.validity.valueMissing) {
+              target.setCustomValidity("Price is required");
+            } else {
+              target.setCustomValidity("");
+            }
+          }}
+          onInput={(e) => (e.target as HTMLInputElement).setCustomValidity("")}
           className="border p-2"
           required
         />
         <input
           name="stock"
           type="number"
+          min="0"
+          step="1"
           placeholder="Stock"
           onChange={handleChange}
+          onInvalid={(e) => {
+            const target = e.target as HTMLInputElement;
+            if (target.validity.rangeUnderflow) {
+              target.setCustomValidity("Stock cannot be negative");
+            } else if (target.validity.valueMissing) {
+              target.setCustomValidity("Stock is required");
+            } else {
+              target.setCustomValidity("");
+            }
+          }}
+          onInput={(e) => (e.target as HTMLInputElement).setCustomValidity("")}
           className="border p-2"
           required
         />
