@@ -18,6 +18,7 @@ export const ProductsList = () => {
     direction: "asc" | "desc";
   } | null>(null);
   const [filteredProducts, setFilteredProducts] = useState(Array<Product>);
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
 
   useEffect(() => {
     const getProductsData = () => {
@@ -100,7 +101,52 @@ export const ProductsList = () => {
   ];
 
   const handleDelete = (id: string) => {
-    setProductList(productList.filter((p) => p.id !== id));
+    setProductList((currentProducts) =>
+      currentProducts.filter((p) => p.id !== id),
+    );
+    setSelectedProductIds((currentSelected) =>
+      currentSelected.filter((productId) => productId !== id),
+    );
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedProductIds.length === 0) return;
+
+    setProductList((currentProducts) =>
+      currentProducts.filter(
+        (product) => !selectedProductIds.includes(product.id),
+      ),
+    );
+    setSelectedProductIds([]);
+  };
+
+  const toggleProductSelection = (productId: string) => {
+    setSelectedProductIds((currentSelected) =>
+      currentSelected.includes(productId)
+        ? currentSelected.filter((id) => id !== productId)
+        : [...currentSelected, productId],
+    );
+  };
+
+  const isAllCurrentProductsSelected =
+    currentProducts.length > 0 &&
+    currentProducts.every((product) => selectedProductIds.includes(product.id));
+
+  const handleSelectAllCurrentPage = () => {
+    if (isAllCurrentProductsSelected) {
+      setSelectedProductIds((currentSelected) =>
+        currentSelected.filter(
+          (id) => !currentProducts.some((product) => product.id === id),
+        ),
+      );
+      return;
+    }
+
+    setSelectedProductIds((currentSelected) => {
+      const nextSelected = new Set(currentSelected);
+      currentProducts.forEach((product) => nextSelected.add(product.id));
+      return Array.from(nextSelected);
+    });
   };
 
   const requestSort = (key: string) => {
@@ -123,8 +169,10 @@ export const ProductsList = () => {
   };
 
   const handleSave = (updatedProduct: Product) => {
-    setProductList(
-      productList.map((p) => (p.id === updatedProduct.id ? updatedProduct : p)),
+    setProductList((currentProducts) =>
+      currentProducts.map((p) =>
+        p.id === updatedProduct.id ? updatedProduct : p,
+      ),
     );
     setEditingProduct(null);
   };
@@ -164,10 +212,18 @@ export const ProductsList = () => {
     applyFilters();
   }, [searchText, selectedCategory, selectedStatus, productList, sortConfig]);
 
+  useEffect(() => {
+    setSelectedProductIds((currentSelected) =>
+      currentSelected.filter((productId) =>
+        productList.some((product) => product.id === productId),
+      ),
+    );
+  }, [productList]);
+
   return (
     <div className="p-6">
       <h2 className="text-2xl font-bold mb-4">Products</h2>
-      <div className="search">
+      <div className="flex flex-wrap items-center gap-2 mb-4">
         <input
           type="text"
           className="m-1 border-2"
@@ -205,11 +261,26 @@ export const ProductsList = () => {
             </option>
           ))}
         </select>
+        <button
+          className="px-4 py-2 bg-red-500 text-white rounded disabled:bg-gray-300"
+          disabled={selectedProductIds.length === 0}
+          onClick={handleBulkDelete}
+        >
+          Delete Selected ({selectedProductIds.length})
+        </button>
       </div>
       <div className="products-table">
         <table className="min-w-full bg-white border border-gray-200">
           <thead className="bg-gray-100">
             <tr>
+              <th className={CELL_CLASSES}>
+                <input
+                  type="checkbox"
+                  checked={isAllCurrentProductsSelected}
+                  onChange={handleSelectAllCurrentPage}
+                  aria-label="Select all products on this page"
+                />
+              </th>
               {columns.map((col) => (
                 <th
                   key={col.key}
@@ -226,9 +297,23 @@ export const ProductsList = () => {
             {currentProducts.map((product) => (
               <tr
                 key={product.id}
-                className="hover:bg-gray-50 cursor-pointer"
+                className={`hover:bg-gray-50 cursor-pointer ${
+                  selectedProductIds.includes(product.id) ? "bg-blue-50" : ""
+                }`}
                 onClick={() => setViewingProduct(product)}
               >
+                <td className={CELL_CLASSES}>
+                  <input
+                    type="checkbox"
+                    checked={selectedProductIds.includes(product.id)}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      toggleProductSelection(product.id);
+                    }}
+                    aria-label={`Select ${product.name}`}
+                  />
+                </td>
                 {columns.map((col) => (
                   <td key={col.key} className={CELL_CLASSES}>
                     {col.render(product)}
