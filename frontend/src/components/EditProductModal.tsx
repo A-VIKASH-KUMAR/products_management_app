@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Product } from "../utils/products_data";
-
+import { updateProduct } from "../services/products";
 interface EditProductModalProps {
   product: Product;
   onClose: () => void;
@@ -9,14 +9,27 @@ interface EditProductModalProps {
 
 export const EditProductModal = ({ product, onClose, onSave }: EditProductModalProps) => {
   const [formData, setFormData] = useState<Product>(product);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSave = () => {
-    onSave(formData);
-    onClose();
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      const updated = await updateProduct(product.id, formData);
+      if (updated) {
+        onSave(updated);
+        onClose();
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save product");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -64,9 +77,12 @@ export const EditProductModal = ({ product, onClose, onSave }: EditProductModalP
           />
         </div>
         <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 bg-gray-300 rounded">Cancel</button>
-          <button onClick={handleSave} className="px-4 py-2 bg-blue-500 text-white rounded">Save</button>
+          <button onClick={onClose} className="px-4 py-2 bg-gray-300 rounded" disabled={saving}>Cancel</button>
+          <button onClick={handleSave} className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50" disabled={saving}>
+            {saving ? "Saving..." : "Save"}
+          </button>
         </div>
+        {error && <p className="mt-2 text-red-500 text-sm">{error}</p>}
       </div>
     </div>
   );

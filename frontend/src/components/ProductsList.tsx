@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
-import { fetchProductsData } from "../services/products";
+import { getProducts, deleteProduct } from "../services/products";
 import { mockProducts, Product } from "../utils/products_data";
 import { EditProductModal } from "./EditProductModal";
 import { ViewProductModal } from "./ViewProduct";
 
 export const ProductsList = () => {
   const [productList, setProductList] = useState(Array<Product>);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loading, setLoading] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
   const [searchText, setSearchText] = useState("");
@@ -19,23 +21,28 @@ export const ProductsList = () => {
   } | null>(null);
   const [filteredProducts, setFilteredProducts] = useState(Array<Product>);
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const fetchProducts = async () => {
+    setLoading(true);
+    try {
+      const offset = (currentPage - 1) * itemsPerPage;
+      const response = await getProducts(itemsPerPage, offset);
+      setProductList(response.data || []);
+      setTotalCount(response.total || 0);
+    } catch {
+      setProductList(mockProducts);
+      setTotalCount(mockProducts.length);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const getProductsData = () => {
-      const data = fetchProductsData();
-      setProductList(data);
-      setFilteredProducts(data);
-    };
-    getProductsData();
-  }, []);
+    fetchProducts();
+  }, [currentPage, itemsPerPage, refreshKey]);
 
-  const indexOfLastProduct = currentPage * itemsPerPage;
-  const indexOfFirstProduct = indexOfLastProduct - itemsPerPage;
-  const currentProducts = filteredProducts.slice(
-    indexOfFirstProduct,
-    indexOfLastProduct,
-  );
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
 
   const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchText(e.target.value);
@@ -82,6 +89,7 @@ export const ProductsList = () => {
             onClick={(e) => {
               e.stopPropagation();
               setEditingProduct(p);
+
             }}
           >
             Edit
@@ -100,24 +108,36 @@ export const ProductsList = () => {
     },
   ];
 
-  const handleDelete = (id: string) => {
-    setProductList((currentProducts) =>
-      currentProducts.filter((p) => p.id !== id),
-    );
-    setSelectedProductIds((currentSelected) =>
-      currentSelected.filter((productId) => productId !== id),
-    );
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteProduct(id);
+      setProductList((currentProducts) =>
+        currentProducts.filter((p) => p.id !== id),
+      );
+      setSelectedProductIds((currentSelected) =>
+        currentSelected.filter((productId) => productId !== id),
+      );
+      setTotalCount((prev) => prev - 1);
+    } catch (error) {
+      console.error("Failed to delete product:", error);
+    }
   };
 
-  const handleBulkDelete = () => {
+  const handleBulkDelete = async () => {
     if (selectedProductIds.length === 0) return;
 
-    setProductList((currentProducts) =>
-      currentProducts.filter(
-        (product) => !selectedProductIds.includes(product.id),
-      ),
-    );
-    setSelectedProductIds([]);
+    try {
+      await Promise.all(selectedProductIds.map((id) => deleteProduct(id)));
+      setProductList((currentProducts) =>
+        currentProducts.filter(
+          (product) => !selectedProductIds.includes(product.id),
+        ),
+      );
+      setSelectedProductIds([]);
+      setTotalCount((prev) => prev - selectedProductIds.length);
+    } catch (error) {
+      console.error("Failed to delete products:", error);
+    }
   };
 
   const toggleProductSelection = (productId: string) => {
@@ -129,14 +149,14 @@ export const ProductsList = () => {
   };
 
   const isAllCurrentProductsSelected =
-    currentProducts.length > 0 &&
-    currentProducts.every((product) => selectedProductIds.includes(product.id));
+    productList.length > 0 &&
+    productList.every((product) => selectedProductIds.includes(product.id));
 
   const handleSelectAllCurrentPage = () => {
     if (isAllCurrentProductsSelected) {
       setSelectedProductIds((currentSelected) =>
         currentSelected.filter(
-          (id) => !currentProducts.some((product) => product.id === id),
+          (id) => !productList.some((product) => product.id === id),
         ),
       );
       return;
@@ -144,7 +164,7 @@ export const ProductsList = () => {
 
     setSelectedProductIds((currentSelected) => {
       const nextSelected = new Set(currentSelected);
-      currentProducts.forEach((product) => nextSelected.add(product.id));
+      productList.forEach((product) => nextSelected.add(product.id));
       return Array.from(nextSelected);
     });
   };
@@ -168,12 +188,13 @@ export const ProductsList = () => {
     return sortConfig.direction === "asc" ? " ↑" : " ↓";
   };
 
-  const handleSave = (updatedProduct: Product) => {
+  const handleSave = async (updatedProduct: Product) => {
     setProductList((currentProducts) =>
       currentProducts.map((p) =>
         p.id === updatedProduct.id ? updatedProduct : p,
       ),
     );
+    setRefreshKey((prev) => prev + 1);
     setEditingProduct(null);
   };
 
@@ -294,33 +315,41 @@ export const ProductsList = () => {
             </tr>
           </thead>
           <tbody>
-            {currentProducts.map((product) => (
-              <tr
-                key={product.id}
-                className={`hover:bg-gray-50 cursor-pointer ${
-                  selectedProductIds.includes(product.id) ? "bg-blue-50" : ""
-                }`}
-                onClick={() => setViewingProduct(product)}
-              >
-                <td className={CELL_CLASSES}>
-                  <input
-                    type="checkbox"
-                    checked={selectedProductIds.includes(product.id)}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      toggleProductSelection(product.id);
-                    }}
-                    aria-label={`Select ${product.name}`}
-                  />
+            {loading ? (
+              <tr>
+                <td colSpan={columns.length + 1} className="py-8 text-center text-gray-500">
+                  Loading...
                 </td>
-                {columns.map((col) => (
-                  <td key={col.key} className={CELL_CLASSES}>
-                    {col.render(product)}
-                  </td>
-                ))}
               </tr>
-            ))}
+            ) : (
+              filteredProducts.map((product) => (
+                <tr
+                  key={product.id}
+                  className={`hover:bg-gray-50 cursor-pointer ${
+                    selectedProductIds.includes(product.id) ? "bg-blue-50" : ""
+                  }`}
+                  onClick={() => setViewingProduct(product)}
+                >
+                  <td className={CELL_CLASSES}>
+                    <input
+                      type="checkbox"
+                      checked={selectedProductIds.includes(product.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        toggleProductSelection(product.id);
+                      }}
+                      aria-label={`Select ${product.name}`}
+                    />
+                  </td>
+                  {columns.map((col) => (
+                    <td key={col.key} className={CELL_CLASSES}>
+                      {col.render(product)}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
