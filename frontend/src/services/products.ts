@@ -43,6 +43,20 @@ export const updateProduct = async (
   return response.json();
 };
 
+export const createProduct = async (
+  product: Partial<Product>,
+): Promise<Product> => {
+  const response = await fetch(`${BASE_URL}/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(product),
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to create product: ${response.statusText}`);
+  }
+  return response.json();
+};
+
 export const deleteProduct = async (id: string): Promise<void> => {
   const response = await fetch(`${BASE_URL}/${id}`, {
     method: "DELETE",

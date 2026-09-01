@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { mockProducts } from "../utils/products_data";
+import { createProduct } from "../services/products";
 
 type NewProduct = {
   id: string;
@@ -44,15 +45,30 @@ export const AddProduct: React.FC<{
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form submitted:", formData);
-    // Add logic to save the product
-    mockProducts.push({
-      ...formData,
-    });
-    onProductAdded?.(formData);
-    navigate("/");
+    try {
+      const created = await createProduct({
+        name: formData.name,
+        category: formData.category,
+        price: formData.price,
+        stock: formData.stock,
+        status: formData.status,
+      });
+      mockProducts.push({
+        id: created.id || formData.id,
+        name: created.name,
+        category: created.category,
+        price: created.price,
+        stock: created.stock,
+        status: created.status,
+        lastUpdated: new Date().toISOString().split("T")[0],
+      });
+      onProductAdded?.(formData);
+      navigate("/");
+    } catch (error) {
+      console.error("Failed to create product:", error);
+    }
   };
 
   return (

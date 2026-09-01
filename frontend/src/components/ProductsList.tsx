@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { getProducts, deleteProduct } from "../services/products";
-import { mockProducts, Product } from "../utils/products_data";
+import { getProducts, deleteProduct, getProduct } from "../services/products";
+import { Product } from "../utils/products_data";
 import { EditProductModal } from "./EditProductModal";
 import { ViewProductModal } from "./ViewProduct";
 
@@ -31,8 +31,8 @@ export const ProductsList = () => {
       setProductList(response.data || []);
       setTotalCount(response.total || 0);
     } catch {
-      setProductList(mockProducts);
-      setTotalCount(mockProducts.length);
+      setProductList([]);
+      setTotalCount(0);
     } finally {
       setLoading(false);
     }
@@ -86,10 +86,10 @@ export const ProductsList = () => {
         <div className="flex gap-2">
           <button
             className="text-blue-500 hover:text-blue-700 font-medium"
-            onClick={(e) => {
+            onClick={async (e) => {
               e.stopPropagation();
-              setEditingProduct(p);
-
+              const product = await fetchProductById(p.id);
+              if (product) setEditingProduct(product);
             }}
           >
             Edit
@@ -196,6 +196,15 @@ export const ProductsList = () => {
     );
     setRefreshKey((prev) => prev + 1);
     setEditingProduct(null);
+  };
+
+  const fetchProductById = async (id: string): Promise<Product | null> => {
+    try {
+      const product = await getProduct(id);
+      return product;
+    } catch {
+      return null;
+    }
   };
 
   const applyFilters = () => {
@@ -328,7 +337,10 @@ export const ProductsList = () => {
                   className={`hover:bg-gray-50 cursor-pointer ${
                     selectedProductIds.includes(product.id) ? "bg-blue-50" : ""
                   }`}
-                  onClick={() => setViewingProduct(product)}
+                  onClick={async () => {
+                    const freshProduct = await fetchProductById(product.id);
+                    if (freshProduct) setViewingProduct(freshProduct);
+                  }}
                 >
                   <td className={CELL_CLASSES}>
                     <input
