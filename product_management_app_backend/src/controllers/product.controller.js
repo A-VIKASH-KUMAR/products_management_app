@@ -35,9 +35,23 @@ const getProducts=async(req,res)=>{
 try {
    const limit=parseInt(req.query.limit)||5;
    const offset=parseInt(req.query.offset)||0;
+   const search=req.query.search||"";
    const productsCollection=await getCollection("products")
-   const total=await productsCollection.countDocuments()
-   const products=await productsCollection.find().skip(offset).limit(limit).toArray()
+
+   let query={}
+   if(search){
+       const escaped=search.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")
+       const regex=new RegExp(escaped,"i")
+       query={
+           $or:[
+                {"name":{"$regex":regex}},
+                {"category":{"$regex":regex}}
+           ]
+       }
+   }
+
+   const total=await productsCollection.countDocuments(query)
+   const products=await productsCollection.find(query).skip(offset).limit(limit).toArray()
     return res.status(200).json({total:total,limit:limit,offset:offset,data:products})
 } catch (error) {
     console.error("Error occured in get products",error)
