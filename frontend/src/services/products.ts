@@ -9,11 +9,25 @@ export interface ProductsResponse {
   data: Product[];
 }
 
+export interface GetProductsParams {
+  limit?: number;
+  offset?: number;
+  search?: string;
+  category?: string;
+  status?: string;
+}
+
 export const getProducts = async (
-  limit: number = 10,
-  offset: number = 0,
+  params: GetProductsParams = {},
 ): Promise<ProductsResponse> => {
-  const response = await fetch(`${BASE_URL}/?limit=${limit}&offset=${offset}`);
+  const { limit = 10, offset = 0, search, category, status } = params;
+  const query = new URLSearchParams();
+  query.set("limit", String(limit));
+  query.set("offset", String(offset));
+  if (search) query.set("search", search);
+  if (category) query.set("category", category);
+  if (status) query.set("status", status);
+  const response = await fetch(`${BASE_URL}/?${query.toString()}`);
   if (!response.ok) {
     throw new Error(`Failed to fetch products: ${response.statusText}`);
   }

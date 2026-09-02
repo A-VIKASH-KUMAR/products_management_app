@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getProducts, deleteProduct, getProduct } from "../services/products";
 import { Product } from "../utils/products_data";
 import { EditProductModal } from "./EditProductModal";
@@ -11,6 +11,23 @@ export const ProductsList = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
   const [searchText, setSearchText] = useState("");
+  const [debouncedSearchText, setDebouncedSearchText] = useState("");
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      setDebouncedSearchText(searchText);
+      setCurrentPage(1);
+    }, 300);
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [searchText]);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -27,10 +44,20 @@ export const ProductsList = () => {
     setLoading(true);
     try {
       const offset = (currentPage - 1) * itemsPerPage;
-      const response = await getProducts(itemsPerPage, offset);
+      const params = {
+        limit: itemsPerPage,
+        offset,
+        search: debouncedSearchText || undefined,
+        category: selectedCategory || undefined,
+        status: selectedStatus || undefined,
+      };
+      console.log("[getProducts] request", params);
+      const response = await getProducts(params);
+      console.log("[getProducts] response", response);
       setProductList(response.data || []);
       setTotalCount(response.total || 0);
-    } catch {
+    } catch (error) {
+      console.error("[getProducts] failed", error);
       setProductList([]);
       setTotalCount(0);
     } finally {
@@ -40,13 +67,13 @@ export const ProductsList = () => {
 
   useEffect(() => {
     fetchProducts();
-  }, [currentPage, itemsPerPage, refreshKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, itemsPerPage, debouncedSearchText, selectedCategory, selectedStatus, refreshKey]);
 
   const totalPages = Math.ceil(totalCount / itemsPerPage);
 
   const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchText(e.target.value);
-    setCurrentPage(1);
   };
   const CELL_CLASSES = "py-3 px-4 border-b text-left";
   const categories = Array.from(new Set(productList.map((p) => p.category)));
@@ -208,21 +235,7 @@ export const ProductsList = () => {
   };
 
   const applyFilters = () => {
-    let filtered = productList;
-    if (searchText) {
-      const query = searchText.trim().toLowerCase();
-      filtered = filtered.filter((product) =>
-        [product.name, product.category, product.status].some((value) =>
-          value.toLowerCase().includes(query),
-        ),
-      );
-    }
-    if (selectedCategory) {
-      filtered = filtered.filter((p) => p.category === selectedCategory);
-    }
-    if (selectedStatus) {
-      filtered = filtered.filter((p) => p.status === selectedStatus);
-    }
+    let filtered = [...productList];
 
     if (sortConfig) {
       filtered.sort((a, b) => {
@@ -240,7 +253,7 @@ export const ProductsList = () => {
 
   useEffect(() => {
     applyFilters();
-  }, [searchText, selectedCategory, selectedStatus, productList, sortConfig]);
+  }, [productList, sortConfig]);
 
   useEffect(() => {
     setSelectedProductIds((currentSelected) =>
@@ -262,14 +275,17 @@ export const ProductsList = () => {
           onChange={handleSearchInputChange}
         />
         <button
-          onClick={applyFilters}
+          onClick={fetchProducts}
           className="px-4 py-2 bg-blue-500 text-white rounded"
         >
           Search
         </button>
         <select
           value={selectedCategory}
-          onChange={(e) => setSelectedCategory(e.target.value)}
+          onChange={(e) => {
+            setSelectedCategory(e.target.value);
+            setCurrentPage(1);
+          }}
           className="m-1 border-2"
         >
           <option value="">All Categories</option>
@@ -281,7 +297,10 @@ export const ProductsList = () => {
         </select>
         <select
           value={selectedStatus}
-          onChange={(e) => setSelectedStatus(e.target.value)}
+          onChange={(e) => {
+            setSelectedStatus(e.target.value);
+            setCurrentPage(1);
+          }}
           className="m-1 border-2"
         >
           <option value="">All Statuses</option>
