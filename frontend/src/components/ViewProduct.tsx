@@ -21,7 +21,7 @@ export const ViewProductModal = ({ product, onClose }: ViewProductProps) => {
                     <p><strong>Status:</strong> {product.status}</p>
                     <p><strong>Last Updated:</strong> {product.lastUpdated}</p>
                 </div>
-                <button onClick={()=> {dispatch(addToCart(product))}} className="mt-6 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 w-full">
+                <button onClick={()=> {dispatch(addToCart(product)); alert("Product added to cart!")}} className="mt-6 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 w-full">
                     Add to Cart
                 </button>
                 <button

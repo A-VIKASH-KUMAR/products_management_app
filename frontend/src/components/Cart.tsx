@@ -10,7 +10,7 @@ export const Cart = () => {
         {cartItems.length === 0 ? (
           <p className="text-center text-gray-500">Your cart is empty.</p>
         ) : (
-          <ul className="space-y-4">
+          <ul className="p-4 m-4 space-y-4">
             {cartItems.map((item: any, index: number) => (
               <li
                 key={`${item.id}-${index}`}

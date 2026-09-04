@@ -1,15 +1,15 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { getProducts, deleteProduct, getProduct } from "../services/products";
 import { Product } from "../utils/products_data";
 import { EditProductModal } from "./EditProductModal";
-import { ViewProductModal } from "./ViewProduct";
 import {Cart} from "./Cart";
 export const ProductsList = () => {
+  const navigate = useNavigate();
   const [productList, setProductList] = useState(Array<Product>);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
   const [searchText, setSearchText] = useState("");
   const [debouncedSearchText, setDebouncedSearchText] = useState("");
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -356,10 +356,7 @@ export const ProductsList = () => {
                   className={`hover:bg-gray-50 cursor-pointer ${
                     selectedProductIds.includes(product.id) ? "bg-blue-50" : ""
                   }`}
-                  onClick={async () => {
-                    const freshProduct = await fetchProductById(product.id);
-                    if (freshProduct) setViewingProduct(freshProduct);
-                  }}
+                  onClick={() => navigate(`/product/${product.id}`)}
                 >
                   <td className={CELL_CLASSES}>
                     <input
@@ -408,12 +405,6 @@ export const ProductsList = () => {
           product={editingProduct}
           onClose={() => setEditingProduct(null)}
           onSave={handleSave}
-        />
-      )}
-      {viewingProduct && (
-        <ViewProductModal
-          product={viewingProduct}
-          onClose={() => setViewingProduct(null)}
         />
       )}
     </div>

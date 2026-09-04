@@ -6,6 +6,7 @@ import { ProductsList } from "./components/ProductsList";
 import { AddProduct } from "./components/AddProduct";
 import { Cart } from "./components/Cart";
 import { productStore } from "./utils/productStore";
+import {ViewProductPage} from "./components/ViewProductPage"
 export function App() {
   return (
     <Provider store={productStore}>
@@ -34,6 +35,10 @@ export const appRoutes = createBrowserRouter([
         path: "/cart",
         element: <Cart />,
       },
+      {
+        path:"/product/:id",
+        element:<ViewProductPage />
+      }
     ],
   },
 ]);
