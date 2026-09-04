@@ -1,11 +1,14 @@
+import { useDispatch } from "react-redux"
 import { Product } from "../utils/products_data"
-
+import { Dispatch } from "@reduxjs/toolkit"
+import { addToCart } from "../utils/productSlices"
 interface ViewProductProps {
     product: Product
     onClose: () => void
 }
 
 export const ViewProductModal = ({ product, onClose }: ViewProductProps) => {
+    const dispatch = useDispatch();
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-lg p-6 w-full max-w-md">
@@ -18,6 +21,9 @@ export const ViewProductModal = ({ product, onClose }: ViewProductProps) => {
                     <p><strong>Status:</strong> {product.status}</p>
                     <p><strong>Last Updated:</strong> {product.lastUpdated}</p>
                 </div>
+                <button onClick={()=> {dispatch(addToCart(product))}} className="mt-6 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 w-full">
+                    Add to Cart
+                </button>
                 <button
                   onClick={onClose}
                   className="mt-6 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 w-full"

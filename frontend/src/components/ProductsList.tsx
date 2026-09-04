@@ -3,7 +3,7 @@ import { getProducts, deleteProduct, getProduct } from "../services/products";
 import { Product } from "../utils/products_data";
 import { EditProductModal } from "./EditProductModal";
 import { ViewProductModal } from "./ViewProduct";
-
+import {Cart} from "./Cart";
 export const ProductsList = () => {
   const [productList, setProductList] = useState(Array<Product>);
   const [totalCount, setTotalCount] = useState(0);
@@ -21,7 +21,7 @@ export const ProductsList = () => {
     debounceTimerRef.current = setTimeout(() => {
       setDebouncedSearchText(searchText);
       setCurrentPage(1);
-    }, 300);
+    }, 600);
     return () => {
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);

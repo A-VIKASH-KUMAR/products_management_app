@@ -1,7 +1,8 @@
 import { LOGO_URL } from "../utils/constants";
 import {Link} from "react-router-dom";
-
+import { useSelector } from "react-redux";
 export const Header = () => {
+  const cartItemCount = useSelector((state: any) => state.cart.products.length);
   return (
     <div className="flex justify-between bg-gray-200 shadow-lg">
       <div className="w-20">
@@ -14,6 +15,9 @@ export const Header = () => {
             </li>
             <li className="px-4">
                 <Link to= "/add-product">Add Product</Link>
+            </li>
+            <li className="px-4">
+                <Link to= "/cart">Cart {cartItemCount}</Link>
             </li>
         </ul>
       </div>
